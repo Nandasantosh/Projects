@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            display: inline-block;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+        #summary {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pharmacy Management System</h1>
+        <div class="form-group">
+            <label for="action">Select Action:</label>
+            <select id="action">
+                <option value="add">Add Medicine</option>
+                <option value="remove">Remove Medicine</option>
+                <option value="modify">Modify Medicine</option>
+                <option value="receipt">Print Receipt</option>
+                <option value="summary">View Summary</option>
+            </select>
+        </div>
+        <div id="inputFields"></div>
+        <button onclick="performAction()">Submit</button>
+        <div id="output"></div>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        class Medicine {
+            constructor(name, quantity, price) {
+                this.name = name;
+                this.quantity = quantity;
+                this.price = price;
+            }
+        }
+
+        class Pharmacy {
+            constructor() {
+                this.medicines = [];
+            }
+
+            addMedicine(name, quantity, price) {
+                const medicine = new Medicine(name, quantity, price);
+                this.medicines.push(medicine);
+                return `Medicine added: ${name}`;
+            }
+
+            removeMedicine(name) {
+                const index = this.medicines.findIndex(m => m.name === name);
+                if (index !== -1) {
+                    this.medicines.splice(index, 1);
+                    return `Medicine removed: ${name}`;
+                }
+                return `Medicine not found: ${name}`;
+            }
+
+            modifyMedicine(name, quantity, price) {
+                const medicine = this.medicines.find(m => m.name === name);
+                if (medicine) {
+                    medicine.quantity = quantity;
+                    medicine.price = price;
+                    return `Medicine modified: ${name}`;
+                }
+                return `Medicine not found: ${name}`;
+            }
+
+            printReceipt(name, quantity) {
+                const medicine = this.medicines.find(m => m.name === name);
+                if (medicine) {
+                    if (medicine.quantity >= quantity) {
+                        const totalPrice = quantity * medicine.price;
+                        medicine.quantity -= quantity;
+                        return `Total price: $${totalPrice.toFixed(2)}`;
+                    } else {
+                        return `Insufficient quantity: ${name}`;
+                    }
+                }
+                return `Medicine not found: ${name}`;
+            }
+
+            viewSummary() {
+                let summaryHtml = "<h2>Sales Summary</h2>";
+                summaryHtml += "<table><thead><tr><th>Name</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead><tbody>";
+                let totalSales = 0;
+                for (const medicine of this.medicines) {
+                    const medicineTotal = medicine.quantity * medicine.price;
+                    totalSales += medicineTotal;
+                    summaryHtml += `<tr>
+                        <td>${medicine.name}</td>
+                        <td>${medicine.quantity}</td>
+                        <td>$${medicine.price.toFixed(2)}</td>
+                        <td>$${medicineTotal.toFixed(2)}</td>
+                    </tr>`;
+                }
+                summaryHtml += `<tr><td colspan="3"><strong>Total Sales</strong></td><td><strong>$${totalSales.toFixed(2)}</strong></td></tr>`;
+                summaryHtml += "</tbody></table>";
+                return summaryHtml;
+            }
+        }
+
+        const pharmacy = new Pharmacy();
+
+        function updateInputFields() {
+            const action = document.getElementById('action').value;
+            const inputFields = document.getElementById('inputFields');
+            inputFields.innerHTML = '';
+
+            switch (action) {
+                case 'add':
+                case 'modify':
+                    inputFields.innerHTML = `
+                        <div class="form-group">
+                            <label for="name">Medicine Name:</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity:</label>
+                            <input type="number" id="quantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="price">Price:</label>
+                            <input type="number" id="price" step="0.01" required>
+                        </div>
+                    `;
+                    break;
+                case 'remove':
+                    inputFields.innerHTML = `
+                        <div class="form-group">
+                            <label for="name">Medicine Name:</label>
+                            <input type="text" id="name" required>
+                        </div>
+                    `;
+                    break;
+                case 'receipt':
+                    inputFields.innerHTML = `
+                        <div class="form-group">
+                            <label for="name">Medicine Name:</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity:</label>
+                            <input type="number" id="quantity" required>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        function performAction() {
+            const action = document.getElementById('action').value;
+            const outputDiv = document.getElementById('output');
+            const summaryDiv = document.getElementById('summary');
+            let result = '';
+
+            switch (action) {
+                case 'add':
+                    const addName = document.getElementById('name').value;
+                    const addQuantity = parseInt(document.getElementById('quantity').value);
+                    const addPrice = parseFloat(document.getElementById('price').value);
+                    result = pharmacy.addMedicine(addName, addQuantity, addPrice);
+                    break;
+                case 'remove':
+                    const removeName = document.getElementById('name').value;
+                    result = pharmacy.removeMedicine(removeName);
+                    break;
+                case 'modify':
+                    const modifyName = document.getElementById('name').value;
+                    const modifyQuantity = parseInt(document.getElementById('quantity').value);
+                    const modifyPrice = parseFloat(document.getElementById('price').value);
+                    result = pharmacy.modifyMedicine(modifyName, modifyQuantity, modifyPrice);
+                    break;
+                case 'receipt':
+                    const receiptName = document.getElementById('name').value;
+                    const receiptQuantity = parseInt(document.getElementById('quantity').value);
+                    result = pharmacy.printReceipt(receiptName, receiptQuantity);
+                    break;
+                case 'summary':
+                    result = 'Summary generated. See table below.';
+                    summaryDiv.innerHTML = pharmacy.viewSummary();
+                    break;
+            }
+
+            outputDiv.innerHTML = `<p>${result}</p>`;
+        }
+
+        document.getElementById('action').addEventListener('change', updateInputFields);
+        updateInputFields();
+    </script>
+</body>
+</html>
